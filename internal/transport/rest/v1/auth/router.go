@@ -20,4 +20,5 @@ func (r *Router) SetupRoutes() {
 	r.router.Post("/register", r.handler.Register)
 	r.router.Post("/login", r.handler.Login)
 	r.router.Post("/refresh", r.handler.Refresh)
+	r.router.Post("/logout", r.handler.Logout)
 }

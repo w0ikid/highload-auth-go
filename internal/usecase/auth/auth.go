@@ -11,6 +11,7 @@ type AuthDomain struct {
 	RegisterUsecase RegisterUsecase
 	LoginUsecase    LoginUsecase
 	RefreshUsecase  RefreshUsecase
+	LogoutUsecase   LogoutUsecase
 }
 
 func NewAuthDomain(
@@ -26,5 +27,6 @@ func NewAuthDomain(
 		RegisterUsecase: NewRegisterUsecase(baseusecase, userRepo),
 		LoginUsecase:    NewLoginUsecase(baseusecase, userRepo, sessionRepo, jwtSecret, accessTTL, refreshTTL),
 		RefreshUsecase:  NewRefreshUsecase(baseusecase, userRepo, sessionRepo, jwtSecret, accessTTL, refreshTTL),
+		LogoutUsecase:   NewLogoutUsecase(baseusecase, sessionRepo),
 	}
 }

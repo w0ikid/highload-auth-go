@@ -81,3 +81,21 @@ func (h *Handler) Refresh(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(tokenPair)
 }
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (h *Handler) Logout(c *fiber.Ctx) error {
+	var req LogoutRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+	}
+
+	if err := h.authDomain.LogoutUsecase.Execute(c.Context(), req.RefreshToken); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "logged out successfully"})
+}
+
