@@ -5,19 +5,20 @@ import (
 
 	"github.com/w0ikid/highload-auth-go/internal/repository"
 	"github.com/w0ikid/highload-auth-go/internal/usecase"
-	"github.com/w0ikid/highload-auth-go/pkg/crypto/hash"
 	"github.com/w0ikid/highload-auth-go/pkg/models"
 )
 
 type RegisterUsecase struct {
 	usecase.BaseUsecase
-	userRepo repository.IUserRepo
+	userRepo   repository.IUserRepo
+	cryptoPool ICryptoPool
 }
 
-func NewRegisterUsecase(base usecase.BaseUsecase, userRepo repository.IUserRepo) RegisterUsecase {
+func NewRegisterUsecase(base usecase.BaseUsecase, userRepo repository.IUserRepo, cryptoPool ICryptoPool) RegisterUsecase {
 	return RegisterUsecase{
 		BaseUsecase: base,
 		userRepo:    userRepo,
+		cryptoPool:  cryptoPool,
 	}
 }
 
@@ -32,8 +33,8 @@ func (uc *RegisterUsecase) Execute(ctx context.Context, email, password string) 
 		_ = uc.Tx.FinalizeTransaction(txCtx, &err)
 	}()
 
-	// 3. Хэшируем пароль перед сохранением
-	hashedPassword, err := hash.HashPassword(password)
+	// 3. Хэшируем пароль через пул воркеров
+	hashedPassword, err := uc.cryptoPool.HashPassword(ctx, password)
 	if err != nil {
 		uc.Logger.Errorw("failed to hash password", "error", err)
 		return "", err

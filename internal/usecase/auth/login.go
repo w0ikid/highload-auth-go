@@ -7,7 +7,6 @@ import (
 
 	"github.com/w0ikid/highload-auth-go/internal/repository"
 	"github.com/w0ikid/highload-auth-go/internal/usecase"
-	"github.com/w0ikid/highload-auth-go/pkg/crypto/hash"
 	"github.com/w0ikid/highload-auth-go/pkg/crypto/jwt"
 )
 
@@ -18,6 +17,7 @@ type LoginUsecase struct {
 	jwtSecret   string
 	accessTTL   time.Duration
 	refreshTTL  time.Duration
+	cryptoPool  ICryptoPool
 }
 
 func NewLoginUsecase(
@@ -27,6 +27,7 @@ func NewLoginUsecase(
 	jwtSecret string,
 	accessTTL time.Duration,
 	refreshTTL time.Duration,
+	cryptoPool ICryptoPool,
 ) LoginUsecase {
 	return LoginUsecase{
 		BaseUsecase: base,
@@ -35,6 +36,7 @@ func NewLoginUsecase(
 		jwtSecret:   jwtSecret,
 		accessTTL:   accessTTL,
 		refreshTTL:  refreshTTL,
+		cryptoPool:  cryptoPool,
 	}
 }
 
@@ -54,8 +56,8 @@ func (uc *LoginUsecase) Execute(ctx context.Context, email, password string) (*T
 		return nil, errors.New("invalid email or password") // Не выдаем, что именно не так
 	}
 
-	// 2. Сравниваем хэши
-	match, err := hash.ComparePassword(password, user.PasswordHash)
+	// 2. Сравниваем хэши через пул воркеров
+	match, err := uc.cryptoPool.ComparePassword(ctx, password, user.PasswordHash)
 	if err != nil || !match {
 		uc.Logger.Warnw("invalid password attempt", "email", email)
 		return nil, errors.New("invalid email or password")
