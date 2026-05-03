@@ -8,6 +8,7 @@ import (
 	"github.com/w0ikid/highload-auth-go/internal/usecase/accounts"
 	"github.com/w0ikid/highload-auth-go/internal/usecase/auth"
 	"github.com/w0ikid/highload-auth-go/pkg/config"
+	"github.com/w0ikid/highload-auth-go/pkg/crypto/worker"
 	"github.com/w0ikid/highload-auth-go/pkg/infra/dragonfly"
 	"github.com/w0ikid/highload-auth-go/pkg/infra/postgres"
 	"go.uber.org/zap"
@@ -34,7 +35,11 @@ func NewContainer(
 	repositories := repository.NewRepository(pg, df)
 
 	baseusecase := usecase.NewBaseUsecase(repositories.ContextTransaction, logger)
-	authDomain := auth.NewAuthDomain(baseusecase, repositories.User, repositories.Session, cfg.JWT.Secret, cfg.JWT.AccessTokenTTL, cfg.JWT.RefreshTokenTTL)
+	
+	// Инициализируем пул воркеров для тяжелых криптографических задач
+	cryptoPool := worker.NewPool(0, 1000) 
+
+	authDomain := auth.NewAuthDomain(baseusecase, repositories.User, repositories.Session, cfg.JWT.Secret, cfg.JWT.AccessTokenTTL, cfg.JWT.RefreshTokenTTL, cryptoPool)
 	accountsDomain := accounts.NewAccountsDomain(baseusecase, repositories.User)
 
 	return &Container{
