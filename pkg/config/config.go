@@ -5,28 +5,21 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	AppEnv   string
-	LogLevel string
-	HTTP     HTTPConfig
-	GRPC     GRPCConfig
-	Postgres PostgresConfig
+	AppEnv    string
+	LogLevel  string
+	HTTP      HTTPConfig
+	Postgres  PostgresConfig
 	Dragonfly DragonflyConfig
-	Zitadel  ZitadelConfig
-	Kafka    KafkaConfig
-	Services ServiceConfig
-	SMTP     SMTPConfig
+	JWT       JWTConfig
 }
 
 type HTTPConfig struct {
-	Port string
-}
-
-type GRPCConfig struct {
 	Port string
 }
 
@@ -46,31 +39,10 @@ type DragonflyConfig struct {
 	DB       int
 }
 
-type ZitadelConfig struct {
-	Domain  string
-	API     string
-	KeyPath string
-	JWKSURL string
-}
-
-type KafkaConfig struct {
-	Brokers []string
-	Topic   string
-}
-
-type ServiceConfig struct {
-	AccountsServiceURL      string
-	AccountsServiceGRPCAddr string
-	TransactionServiceURL   string
-}
-
-type SMTPConfig struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	From     string
-	UseTLS   bool
+type JWTConfig struct {
+	Secret          string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 func (p PostgresConfig) DSN() string {
@@ -95,19 +67,16 @@ func Load(prefix ...string) Config {
 
 	return Config{
 		AppEnv:   getEnv("APP_ENV", "dev", servicePrefix),
-		LogLevel: getEnv("LOG_LEVEL", "dev", servicePrefix),
+		LogLevel: getEnv("LOG_LEVEL", "info", servicePrefix),
 		HTTP: HTTPConfig{
 			Port: getEnv("APP_PORT", "8080", servicePrefix),
-		},
-		GRPC: GRPCConfig{
-			Port: getEnv("GRPC_PORT", "50051", servicePrefix),
 		},
 		Postgres: PostgresConfig{
 			Host:     getEnv("POSTGRES_HOST", "localhost", servicePrefix),
 			Port:     getEnv("POSTGRES_PORT", "5432", servicePrefix),
 			User:     getEnv("POSTGRES_USER", "postgres", servicePrefix),
 			Password: getEnv("POSTGRES_PASSWORD", "postgres", servicePrefix),
-			DBName:   getEnv("POSTGRES_DB_NAME", "postgres", servicePrefix),
+			DBName:   getEnv("POSTGRES_DB_NAME", "auth_db", servicePrefix),
 			SSLMode:  getEnv("POSTGRES_SSLMODE", "disable", servicePrefix),
 		},
 		Dragonfly: DragonflyConfig{
@@ -116,33 +85,15 @@ func Load(prefix ...string) Config {
 			Password: getEnv("DRAGONFLY_PASSWORD", "", servicePrefix),
 			DB:       getEnvInt("DRAGONFLY_DB", "0", servicePrefix),
 		},
-		Zitadel: ZitadelConfig{
-			Domain:  getEnv("ZITADEL_DOMAIN_BACKEND", "http://zitadel.localhost:8080"),
-			API:     getEnv("ZITADEL_API_BACKEND", "zitadel.localhost:8080"),
-			KeyPath: getEnv("ZITADEL_KEY_PATH", "path/to/key.json", servicePrefix),
-			JWKSURL: getEnv("ZITADEL_JWKS_URL", "http://zitadel.localhost:8080/oauth/v2/keys"),
-		},
-		Kafka: KafkaConfig{
-			Brokers: getEnvSlice("KAFKA_BROKERS", "localhost:9092", servicePrefix),
-			Topic:   getEnv("KAFKA_TOPIC", "events", servicePrefix),
-		},
-		Services: ServiceConfig{
-			AccountsServiceURL:      getEnv("ACCOUNTS_SERVICE_URL", "http://localhost:8081"),
-			AccountsServiceGRPCAddr: getEnv("ACCOUNTS_SERVICE_GRPC_ADDR", "localhost:50051"),
-			TransactionServiceURL:   getEnv("TRANSACTION_SERVICE_URL", "http://localhost:8082"),
-		},
-		SMTP: SMTPConfig{
-			Host:     getEnv("SMTP_HOST", "localhost", servicePrefix),
-			Port:     getEnvInt("SMTP_PORT", "1025", servicePrefix),
-			Username: getEnv("SMTP_USERNAME", "", servicePrefix),
-			Password: getEnv("SMTP_PASSWORD", "", servicePrefix),
-			From:     getEnv("SMTP_FROM", "noreply@yarmaq.local", servicePrefix),
-			UseTLS:   getEnvBool("SMTP_USE_TLS", "false", servicePrefix),
+		JWT: JWTConfig{
+			Secret:          getEnv("JWT_SECRET", "super-secret-key-replace-me", servicePrefix),
+			AccessTokenTTL:  15 * time.Minute,
+			RefreshTokenTTL: 30 * 24 * time.Hour,
 		},
 	}
 }
 
-// SMART getEnv: first check service specific variable (e.g. ACCOUNTS_POSTGRES_HOST),
+// SMART getEnv: first check service specific variable (e.g. AUTH_POSTGRES_HOST),
 // if not found, check general variable (e.g. POSTGRES_HOST),
 // if not found, return fallback
 func getEnv(key, fallback string, prefix ...string) string {

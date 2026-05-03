@@ -2,11 +2,14 @@ package rest
 
 import (
 	v1 "github.com/w0ikid/highload-auth-go/internal/transport/rest/v1"
-	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/account"
+	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/accounts"
+	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/auth"
 )
 
 type Dependencies struct {
-	AccountDeps account.HandlerDeps
+	AuthDeps     auth.HandlerDeps
+	AccountsDeps accounts.HandlerDeps
+	JWTSecret    string
 }
 
 type Handlers struct {
@@ -16,7 +19,9 @@ type Handlers struct {
 func NewHandlers(deps Dependencies) *Handlers {
 	return &Handlers{
 		V1: v1.NewHandlers(v1.Dependencies{
-			AccountDeps: deps.AccountDeps,
+			AuthDeps:     deps.AuthDeps,
+			AccountsDeps: deps.AccountsDeps,
+			JWTSecret:    deps.JWTSecret,
 		}),
 	}
 }

@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/account"
+	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/accounts"
+	"github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/auth"
+	"github.com/w0ikid/highload-auth-go/pkg/auth/middleware"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +30,10 @@ func (r *Router) SetupRoutes(logger *zap.SugaredLogger) {
 		return c.Status(200).JSON(fiber.Map{"message": "pong"})
 	})
 
-	accountRouter := v1Router.Group("/account")
-	account.NewRouter(accountRouter, r.handler.Account).SetupRoutes()
+	authRouter := v1Router.Group("/auth")
+	auth.NewRouter(authRouter, r.handler.Auth).SetupRoutes()
+
+	accountsRouter := v1Router.Group("/accounts")
+	accountsRouter.Use(middleware.AuthMiddleware(r.handler.JWTSecret))
+	accounts.NewRouter(accountsRouter, r.handler.Accounts).SetupRoutes()
 }

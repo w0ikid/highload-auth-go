@@ -1,0 +1,23 @@
+package auth
+
+import (
+	"github.com/gofiber/fiber/v2"
+)
+
+type Router struct {
+	router  fiber.Router
+	handler Handler
+}
+
+func NewRouter(router fiber.Router, handler Handler) *Router {
+	return &Router{
+		router:  router,
+		handler: handler,
+	}
+}
+
+func (r *Router) SetupRoutes() {
+	r.router.Post("/register", r.handler.Register)
+	r.router.Post("/login", r.handler.Login)
+	r.router.Post("/refresh", r.handler.Refresh)
+}

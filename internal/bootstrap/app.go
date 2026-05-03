@@ -15,7 +15,8 @@ import (
 	"github.com/w0ikid/highload-auth-go/pkg/infra/postgres"
 
 	"github.com/w0ikid/highload-auth-go/internal/transport/rest"
-	accountHandler "github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/account"
+	accountsHandler "github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/accounts"
+	authHandler "github.com/w0ikid/highload-auth-go/internal/transport/rest/v1/auth"
 )
 
 type App struct {
@@ -44,7 +45,7 @@ func NewApp(ctx context.Context, cfg config.Config, logger *zap.SugaredLogger) (
 	}
 
 	// DI Container
-	cont := NewContainer(ctx, pg, df, appLogger)
+	cont := NewContainer(ctx, cfg, pg, df, appLogger)
 
 	fapp := fiber.New(fiber.Config{
 		AppName:      "highload-auth-go",
@@ -61,9 +62,13 @@ func NewApp(ctx context.Context, cfg config.Config, logger *zap.SugaredLogger) (
 
 	// Handlers DI
 	h := rest.NewHandlers(rest.Dependencies{
-		AccountDeps: accountHandler.HandlerDeps{
-			AccountDomain: cont.AccountDomain,
+		AuthDeps: authHandler.HandlerDeps{
+			AuthDomain: cont.AuthDomain,
 		},
+		AccountsDeps: accountsHandler.HandlerDeps{
+			AccountsDomain: cont.AccountsDomain,
+		},
+		JWTSecret: cfg.JWT.Secret,
 	})
 
 	// Fiber router
